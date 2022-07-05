@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>测试合约</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <button onclick="ScribeAllEvent()">订阅合约所有事件</button>
+        <button onclick="subscribeContractEvent()">订阅合约store事件</button>
+        <button onclick="subscribe2ContractEvent()">订阅合约remove事件</button>
+        <button onclick="saveDataHandler()">保存数据</button>
+        <button onclick="removeDataHandler()">移除数据</button>
+        <button onclick="loadDatahandler()">加载数据</button>
+        <button onclick="estimateGasHandler()">估算油费</button>
+    </body>
+    <script src="./web3.min.js"></script>
+    <script type="text/javascript">
+        //链的ip
+        //var localhosthttp            = 'HTTP://192.168.0.101:9545';
+        //var normalhosthttp            = 'HTTP://192.168.0.101:9545';
+        //var localhostwebsocket       = 'ws://192.168.0.101:9545';
+        //账户
+        //var account_1       = "0xe8088E9E60bBE6101a1C381fF5A731c5Fb8Ef5bc";
+        //正式网 matamask 账号
+        // var account_1       ="0x000b0b69CF787cB18f90fBDEc8D6C2aFA5e6fC45"
+        var account_1;
+        //合约被部署的地址
+        var contractAddress = "0x280d2187ACef48028B34935Fe27dCB8D716542f6";
+        //Blueprint(需要调用的合约ABI)合约生成的Blueprint.json中的abi
+        var contractABI     = [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "key",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newValue",
+          "type": "string"
+        }
+      ],
+      "name": "ValueChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "key",
+          "type": "string"
+        }
+      ],
+      "name": "ValueRemoved",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "last_completed_migration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "completed",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCompleted",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "key",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "value",
+          "type": "string"
+        }
+      ],
+      "name": "store",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "key",
+          "type": "string"
+        }
+      ],
+      "name": "load",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "key",
+          "type": "string"
+        }
+      ],
+      "name": "remove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]
+        console.log(window)
+
+        // var web3Provider;
+        // //使用web3获取合约实例  链接本地的matamask 获得授权之后即可调用
+        web3Provider = new Web3.providers.HttpProvider("https://kovan.infura.io/v3/");
+        // if (window.ethereum) {
+        //   web3Provider = window.ethereum;
+        //   try {
+        //     // Request account access
+        //     window.ethereum.request({ method: "eth_requestAccounts" });
+        //   } catch (error) {
+        //     // User denied account access...
+        //     console.error("User denied account access")
+        //   }
+        // }
+        // // Legacy dapp browsers...
+        // else if (window.web3) {
+        //   web3Provider = window.web3.currentProvider;
+        // }
+        // // If no injected web3 instance is detected, fall back to Ganache
+        // else {
+        //   web3Provider = new Web3.providers.HttpProvider("https://mainnet.infura.io");
+        //   //web3Provider = new Web3.providers.HttpProvider('HTTP://127.0.0.1:7545');
+        //   //web3Provider = new Web3.providers.HttpProvider('HTTP://127.0.0.1:7545');
+        //   console.log("未安装钱包");
+        // }
+        web3 = new Web3(web3Provider);
+        //通过web3获取合约实例对象
+        Test_Contract = new web3.eth.Contract(contractABI, contractAddress);
+        account_1 = "0x000b0b69CF787cB18f90fBDEc8D6C2aFA5e6fC45";
+        //从matamsk获得账号地址
+        // web3.eth.getAccounts(function(error, accounts) {
+        //   account_1 = accounts[0];
+        //   console.log("matamsk获得账号地址 = "+account_1)
+          
+        // });
+
+        //订阅所有事件
+        function ScribeAllEvent()
+        {
+            Test_Contract.events.allEvents(function(error,event){
+            if(error!=null)
+            {
+              console.log("1合约订阅error："+error)
+            }
+            console.log("2合约订阅event：")
+            console.log(event)
+            })
+        }
+      
+         //订阅事件保存合约事件
+        function subscribeContractEvent() {
+          Test_Contract.events.ValueChanged(function(error,event)
+            { 
+              if(error!=null)
+              {
+                console.log("store合约订阅error："+error)
+              }
+              console.log("store合约订阅event：")
+              console.log(event);
+            }
+          )
+          .on('data',function(event){
+              console.log("store:");
+              console.log(event);
+          })
+          .on('changed', function(event){
+            // remove event from local database
+            console.log("store remove event from local database = "+event);
+          } )
+          .on('error', console.error);
+        }
+
+        //订阅数据移除事件
+        function subscribe2ContractEvent() {
+          Test_Contract.events.ValueRemoved(function(error,event)
+            {
+              if(error!=null)
+              {
+                  console.log("Removed合约订阅error："+error)
+              }
+              console.log("Removed合约订阅event：")
+              console.log(event)
+            }
+          )
+          .on('data',function(event){
+              console.log("Removed :");
+              console.log(event)
+          })
+          .on('changed', function(event){
+            // remove event from local database
+            console.log("Removed remove event from local database = ");
+            console.log(event)
+          } )
+          .on('error', console.error);
+        }
+
+        //估算一下油费
+        function estimateGasHandler()
+        {
+          Test_Contract.methods.store("12313","大神222")
+          .estimategas({gas:500000},function(error,gasAmount)
+          {
+            if(gasAmount == 5000000)
+            {
+              console.log("该方法将5000000油费使用完了");
+            }else{
+              console.log("store本次需要消费油费gas= "+gasAmount);
+            }
+          });
+        }
+
+        // 创建交易 保存数据
+        function saveDataHandler() {
+            Test_Contract.methods.store("12313","大神222").send({from:account_1,gas:1000000}).then
+            (function(receipt) {
+                console.log("保存数据成功回调receipt: ");
+                console.log(receipt)
+            });
+        }
+
+         // 创建交易 保存数据
+         function removeDataHandler() {
+            Test_Contract.methods.remove("12313").send({from:account_1,gas:1000000}).then
+            (function(receipt) {
+                console.log("移除数据成功回调receipt: ");
+                console.log(receipt)
+            });
+        }
+
+        function loadDatahandler() {
+          Test_Contract.methods.load("11").call({from:account_1}).then(function(result)
+          {
+              console.log(result);
+          });
+        }
+
+        function getAllData()
+        {
+          console.log(Test_Contract.methods.database);
+        }
+
+        //获取账户余额
+        function getBalance()
+        {
+          web3.eth.getBalance(account_1,function(error,result) {
+            console.log("账户余额：");
+            console.log(result)
+        });
+
+        //账户间交易案例
+        function serAcountTransaction()
+        {
+          getBalance();
+          // 使用promise  发起交易 给一个账户转账
+          web3.eth.sendTransaction({
+          from: account_1,
+          to: '0xe8088E9E60bBE6101a1C381fF5A731c5Fb8Ef5bc',
+          value: '111000000000000000'
+          })
+          .then(function(receipt){
+            console.log(receipt);
+            getBalance();
+          });
+        }
+
+        }
+    </script>
+</html>
